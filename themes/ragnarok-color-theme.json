@@ -1,0 +1,112 @@
+{
+  "name": "Ragnarok",
+  "type": "dark",
+  "colors": {
+    "editor.background": "#1a2228",
+    "editor.foreground": "#d8e6f2",
+    "editor.lineHighlightBackground": "#222c36",
+    "editor.selectionBackground": "#5c759088",
+    "editor.selectionHighlightBackground": "#759cc644",
+    "editor.wordHighlightBackground": "#9ab3cf22",
+    "editorCursor.foreground": "#d3bd89",
+    "editorLineNumber.foreground": "#5c7590",
+    "editorLineNumber.activeForeground": "#afc6ea",
+    "editorBracketMatch.background": "#9ab3cf28",
+    "editorBracketMatch.border": "#afc6ea",
+    "editorIndentGuide.background1": "#2a3642",
+    "editorIndentGuide.activeBackground1": "#6a869f",
+    "editorWidget.background": "#141b22",
+    "editorWidget.border": "#5c7590",
+    "editorSuggestWidget.selectedBackground": "#2f3a45",
+    "editorHoverWidget.background": "#141b22",
+    "editorHoverWidget.border": "#5c7590",
+    "peekView.border": "#9ab3cf",
+    "peekViewTitle.background": "#243140",
+    "sideBar.background": "#141b22",
+    "sideBar.foreground": "#aec7e6",
+    "list.hoverBackground": "#243140",
+    "list.activeSelectionBackground": "#2f3a45",
+    "list.inactiveSelectionBackground": "#243140",
+    "activityBar.background": "#10161c",
+    "activityBar.foreground": "#afc6ea",
+    "activityBar.inactiveForeground": "#5c7590",
+    "activityBarBadge.background": "#ad4b4d",
+    "activityBarBadge.foreground": "#d8e6f2",
+    "statusBar.background": "#10161c",
+    "statusBar.foreground": "#aec7e6",
+    "statusBarItem.remoteBackground": "#2f3a45",
+    "titleBar.activeBackground": "#10161c",
+    "titleBar.activeForeground": "#d8e6f2",
+    "tab.activeBackground": "#1a2228",
+    "tab.inactiveBackground": "#141b22",
+    "tab.activeForeground": "#d3bd89",
+    "tab.inactiveForeground": "#8e9daf",
+    "tab.activeBorderTop": "#afc6ea",
+    "panel.background": "#141b22",
+    "panel.border": "#2a3642",
+    "panelTitle.activeBorder": "#9ab3cf",
+    "terminal.background": "#10161c",
+    "terminal.foreground": "#d8e6f2",
+    "terminal.ansiCyan": "#9ab3cf",
+    "terminal.ansiBrightCyan": "#afc6ea",
+    "terminal.ansiYellow": "#d3bd89",
+    "terminal.ansiRed": "#ad4b4d",
+    "focusBorder": "#9ab3cf",
+    "textLink.foreground": "#afc6ea",
+    "textLink.activeForeground": "#d8e6f2",
+    "button.background": "#48332f",
+    "button.foreground": "#d8e6f2",
+    "button.hoverBackground": "#5c4338",
+    "scrollbarSlider.background": "#5c759066",
+    "scrollbarSlider.hoverBackground": "#9ab3cf88",
+    "badge.background": "#2f3a45",
+    "badge.foreground": "#d8e6f2",
+    "progressBar.background": "#afc6ea",
+    "editor.findMatchBackground": "#759cc655",
+    "editor.findMatchHighlightBackground": "#5c759044",
+    "minimap.findMatchHighlight": "#afc6ea00"
+  },
+  "tokenColors": [
+    {
+      "scope": ["comment", "punctuation.definition.comment"],
+      "settings": { "foreground": "#6a869f", "fontStyle": "italic" }
+    },
+    {
+      "scope": ["string", "string.quoted"],
+      "settings": { "foreground": "#d3bd89" }
+    },
+    {
+      "scope": ["constant.numeric", "constant.language"],
+      "settings": { "foreground": "#afc6ea" }
+    },
+    {
+      "scope": ["keyword", "storage.type", "storage.modifier"],
+      "settings": { "foreground": "#9ab3cf" }
+    },
+    {
+      "scope": ["keyword.control"],
+      "settings": { "foreground": "#aec7e6" }
+    },
+    {
+      "scope": ["entity.name.function", "support.function"],
+      "settings": { "foreground": "#d8e6f2" }
+    },
+    {
+      "scope": ["entity.name.type", "support.class", "support.type"],
+      "settings": { "foreground": "#b8a077" }
+    },
+    {
+      "scope": ["variable", "variable.other"],
+      "settings": { "foreground": "#c5d4e4" }
+    },
+    {
+      "scope": ["punctuation", "meta.brace"],
+      "settings": { "foreground": "#8e9daf" }
+    },
+    {
+      "scope": ["invalid", "invalid.illegal"],
+      "settings": { "foreground": "#ad4b4d" }
+    }
+  ],
+  "semanticHighlighting": true
+}
