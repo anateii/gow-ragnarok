@@ -18,7 +18,58 @@
         "uiTheme": "vs-dark",
         "path": "./themes/ragnarok-color-theme.json"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "mimir.summon",
+        "title": "Mimir: Summon"
+      },
+      {
+        "command": "mimir.throwRune",
+        "title": "Mimir: Throw a rune"
+      },
+      {
+        "command": "mimir.drinkWater",
+        "title": "Mimir: I drank water"
+      }
+    ],
+    "configuration": {
+      "title": "Mimir",
+      "properties": {
+        "mimir.breakReminderMinutes": {
+          "type": "number",
+          "default": 60,
+          "minimum": 0,
+          "description": "Minutes of work before Mimir asks you to take a break. 0 disables the reminder."
+        },
+        "mimir.waterReminderMinutes": {
+          "type": "number",
+          "default": 45,
+          "minimum": 0,
+          "description": "Minutes between water reminders. 0 disables the reminder."
+        }
+      }
+    },
+    "viewsContainers": {
+      "secondarySidebar": [
+        {
+          "id": "mimir",
+          "title": "Mimir",
+          "icon": "assets/mimir-head.png"
+        }
+      ]
+    },
+    "views": {
+      "mimir": [
+        {
+          "type": "webview",
+          "id": "mimir.pet",
+          "name": "Mimir",
+          "icon": "assets/mimir-head.png",
+          "visibility": "visible"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -30,7 +81,7 @@
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "check-types": "tsc --noEmit",
+    "check-types": "tsc --noEmit && tsc --noEmit -p src/webview",
     "lint": "eslint src",
     "test": "vscode-test"
   },

@@ -1,26 +1,80 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
+import { MimirViewProvider } from "./mimirView";
+import { WellbeingTracker } from "./wellbeingTracker";
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+const lines = [
+  "Head's up, brother.",
+  "That bracket is lying to you.",
+  "I have seen worse realms than this file.",
+  "Save your work. Even gods forget.",
+];
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "gow-ragnarok" is now active!');
+export function activate(context: vscode.ExtensionContext): void {
+  const mimir = new MimirViewProvider(context.extensionUri, lines);
+  let errorCount = 0;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('gow-ragnarok.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from gow-ragnarok!');
-	});
+  context.subscriptions.push(
+    // View
+    vscode.window.registerWebviewViewProvider(MimirViewProvider.viewId, mimir),
+  );
+  const wellbeing = new WellbeingTracker(context, mimir);
 
-	context.subscriptions.push(disposable);
+  context.subscriptions.push(
+    wellbeing,
+
+    // Commands
+    vscode.commands.registerCommand("mimir.summon", async () => {
+      await vscode.commands.executeCommand("mimir.pet.focus");
+      mimir.say(mimir.randomIdleLine());
+    }),
+    vscode.commands.registerCommand("mimir.throwRune", async () => {
+      await vscode.commands.executeCommand("mimir.pet.focus");
+      mimir.throwRune();
+    }),
+    vscode.commands.registerCommand("mimir.drinkWater", () => {
+      wellbeing.drinkWater();
+    }),
+
+    // Reactions
+    vscode.workspace.onDidSaveTextDocument((document) => {
+      if (wellbeing.onSave(document)) {
+        return;
+      }
+      mimir.setMood("pleased", "Saved. Even gods forget, sometimes.");
+    }),
+    vscode.languages.onDidChangeDiagnostics(() => {
+      const next = countErrors();
+      if (next > errorCount) {
+        mimir.setMood("annoyed", "That bracket is lying to you.");
+      }
+      errorCount = next;
+    }),
+
+    // Status bar
+    createHorn(),
+  );
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate(): void {}
+
+function countErrors(): number {
+  return vscode.languages.getDiagnostics().reduce((sum, [, list]) => {
+    return (
+      sum +
+      list.filter((item) => item.severity === vscode.DiagnosticSeverity.Error)
+        .length
+    );
+  }, 0);
+}
+
+function createHorn(): vscode.StatusBarItem {
+  const horn = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100,
+  );
+  horn.text = "⚡ Summon Mimir";
+  horn.tooltip = "Open the Mimir pet view";
+  horn.command = "mimir.summon";
+  horn.show();
+  return horn;
+}

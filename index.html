@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src {{cspSource}} data:; style-src {{cspSource}}; script-src 'nonce-{{nonce}}';"
+    />
+    <title>Mimir</title>
+    <link rel="stylesheet" href="{{styleUri}}" />
+  </head>
+  <body>
+    <div id="stage">
+      <div id="mimir">
+        <img
+          id="face"
+          src="{{imageUri}}"
+          data-idle="{{imageUri}}"
+          data-pleased="{{pleasedUri}}"
+          data-annoyed="{{annoyedUri}}"
+          width="96"
+          height="96"
+          alt="Mimir"
+        />
+      </div>
+      <div id="vitality-row">
+        <span id="vitality-rune" aria-hidden="true">ᚱ</span>
+        <div id="vitality" title="Vitality: breaks, tests and water keep Mimir thriving">
+          <div id="vitality-fill"></div>
+        </div>
+        <span id="vitality-score">50/100</span>
+      </div>
+      <p id="vitality-help">
+        Vitality drains as you work. Take breaks, write tests and drink water
+        to keep Mimir thriving.
+      </p>
+      <div id="status"></div>
+    </div>
+    <script nonce="{{nonce}}" src="{{scriptUri}}"></script>
+  </body>
+</html>
