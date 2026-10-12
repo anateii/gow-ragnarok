@@ -6,9 +6,16 @@ import {
   newErrors,
   summarizeErrors,
 } from "./errorReport";
+import { Situation, pick, withReaction } from "./lines";
 
 // Diagnostics churn while typing; wait for them to settle before speaking.
 const SETTLE_MS = 1000;
+// From this many errors in a file, Mimir reacts to the mess as a whole.
+const MANY_ERRORS = 5;
+
+function reactionFor(total: number, usual: Situation): Situation {
+  return total >= MANY_ERRORS ? "manyErrors" : usual;
+}
 
 /**
  * Tells you exactly which errors appear in the file you're working on. An
@@ -64,7 +71,12 @@ export class ErrorWatcher implements vscode.Disposable {
     this.uri = editor.document.uri;
     this.known = errorsFor(this.uri);
     if (this.known.length > 0) {
-      this.pin(summarizeErrors(this.known));
+      this.pin(
+        withReaction(
+          reactionFor(this.known.length, "fileHasErrors"),
+          summarizeErrors(this.known),
+        ),
+      );
     } else {
       this.unpin();
     }
@@ -84,15 +96,25 @@ export class ErrorWatcher implements vscode.Disposable {
       this.saved = false;
       if (next.length === 0) {
         this.unpin();
-        this.mimir.setMood("pleased", "Clean. Not a single error left in this file.");
+        this.mimir.setMood("pleased", pick("errorsCleared"));
       } else {
-        this.pin(describeError(fresh[0] ?? next[0], next.length));
+        this.pin(
+          withReaction(
+            reactionFor(next.length, "errorStillThere"),
+            describeError(fresh[0] ?? next[0], next.length),
+          ),
+        );
       }
       return;
     }
     // While editing, only new errors change the message; fixes wait for a save.
     if (fresh.length > 0) {
-      this.pin(describeError(fresh[0], next.length));
+      this.pin(
+        withReaction(
+          reactionFor(next.length, "errorAppeared"),
+          describeError(fresh[0], next.length),
+        ),
+      );
     }
   }
 

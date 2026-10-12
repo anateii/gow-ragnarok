@@ -2,14 +2,16 @@
   "name": "gow-ragnarok",
   "displayName": "gow-ragnarok",
   "description": "Theme and virtual pet inspired by the game God of War - Ragnarok",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "engines": {
     "vscode": "^1.140.0"
   },
   "categories": [
     "Themes"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "themes": [
@@ -27,6 +29,14 @@
       {
         "command": "mimir.drinkWater",
         "title": "Mimir: I drank water"
+      },
+      {
+        "command": "mimir.takeBreak",
+        "title": "Mimir: Take a break"
+      },
+      {
+        "command": "mimir.endBreak",
+        "title": "Mimir: End break early"
       }
     ],
     "configuration": {
@@ -37,6 +47,12 @@
           "default": 60,
           "minimum": 0,
           "description": "Minutes of work before Mimir asks you to take a break. 0 disables the reminder."
+        },
+        "mimir.breakMinutes": {
+          "type": "number",
+          "default": 15,
+          "minimum": 1,
+          "description": "Length of a break started with \"Take a break\". Files stay read-only until it ends."
         },
         "mimir.waterReminderMinutes": {
           "type": "number",

@@ -13,26 +13,23 @@ import {
   reward,
   stageOf,
 } from "./wellbeing";
+import { Situation, pick } from "./lines";
 
 const STATE_KEY = "mimir.wellbeing";
 const TICK_MS = 60_000;
 
-const thanks: Record<Habit, string> = {
-  break: "You walked away and came back. Wise, brother.",
-  test: "A test! Now the bugs have to fight fair.",
-  water: "Water. Even the World Serpent stays hydrated.",
-};
-
-const stageLines: Record<Stage, string> = {
-  thriving: "I feel like a young god again!",
-  steady: "Steady, brother. Steady.",
-  wilting: "I'm wilting here. A break, a test, some water... anything.",
+/** What Mimir says when each habit is rewarded. */
+const thanks: Record<Habit, Situation> = {
+  break: "walkedAway",
+  test: "testSaved",
+  water: "water",
 };
 
 export class WellbeingTracker implements vscode.Disposable {
   private state: WellbeingState;
   private stage: Stage;
   private blurredAt?: number;
+  private onBreak = false;
   private lastNag: Partial<Record<Habit, number>> = {};
   private readonly disposables: vscode.Disposable[] = [];
 
@@ -56,7 +53,7 @@ export class WellbeingTracker implements vscode.Disposable {
       vscode.window.onDidChangeWindowState((e) => this.onFocus(e.focused)),
       vscode.tasks.onDidEndTaskProcess((e) => {
         if (e.exitCode === 0 && e.execution.task.group === vscode.TaskGroup.Test) {
-          this.record("test", "Green runes across the board!");
+          this.record("test", pick("testsPassed"));
         }
       }),
     );
@@ -70,13 +67,26 @@ export class WellbeingTracker implements vscode.Disposable {
     if (!isTestFile(document.uri.path)) {
       return false;
     }
-    this.record("test", quiet ? null : thanks.test);
+    this.record("test", quiet ? null : pick(thanks.test));
     return true;
+  }
+
+  /**
+   * During a break-mode break, focus changes and break reminders are ignored
+   * so walking away mid-break isn't rewarded on top of finishing it.
+   */
+  setOnBreak(onBreak: boolean): void {
+    this.onBreak = onBreak;
+    this.blurredAt = undefined;
+  }
+
+  completeBreak(line: string): void {
+    this.record("break", line);
   }
 
   drinkWater(): void {
     if (!this.record("water")) {
-      this.mimir.say("You just drank, brother. Give it a few minutes.");
+      this.mimir.say(pick("waterCooldown"));
     }
   }
 
@@ -85,6 +95,9 @@ export class WellbeingTracker implements vscode.Disposable {
   }
 
   private onFocus(focused: boolean): void {
+    if (this.onBreak) {
+      return;
+    }
     const now = Date.now();
     if (!focused) {
       this.blurredAt = now;
@@ -100,7 +113,10 @@ export class WellbeingTracker implements vscode.Disposable {
    * Rewards a habit; `line` is what Mimir says, or null to stay quiet.
    * Returns false if the habit was still on cooldown.
    */
-  private record(habit: Habit, line: string | null = thanks[habit]): boolean {
+  private record(
+    habit: Habit,
+    line: string | null = pick(thanks[habit]),
+  ): boolean {
     const result = reward(this.state, habit, Date.now());
     this.state = result.state;
     if (result.rewarded) {
@@ -117,22 +133,16 @@ export class WellbeingTracker implements vscode.Disposable {
     const now = Date.now();
     this.state = decay(this.state, now);
     this.publish();
-    if (!vscode.window.state.focused) {
+    if (this.onBreak || !vscode.window.state.focused) {
       return;
     }
     const config = vscode.workspace.getConfiguration("mimir");
     if (this.shouldNag("break", now, config.get("breakReminderMinutes", 60))) {
-      this.mimir.setMood(
-        "annoyed",
-        "You've been staring at this realm for an hour. Stretch your legs.",
-      );
+      this.mimir.setMood("annoyed", pick("breakReminder"));
     }
     if (this.shouldNag("water", now, config.get("waterReminderMinutes", 45))) {
       void vscode.window
-        .showInformationMessage(
-          "Mimir: Drink some water, brother. Heads need it too.",
-          "Drank it",
-        )
+        .showInformationMessage(`Mimir: ${pick("waterReminder")}`, "Drank it")
         .then((choice) => {
           if (choice === "Drank it") {
             this.drinkWater();
@@ -161,7 +171,7 @@ export class WellbeingTracker implements vscode.Disposable {
     this.mimir.setWaterReadyAt(cooldownEndsAt(this.state, "water"));
     if (next !== this.stage) {
       this.stage = next;
-      this.mimir.say(stageLines[next]);
+      this.mimir.say(pick(next));
     }
   }
 }

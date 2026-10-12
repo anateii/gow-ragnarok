@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src {{cspSource}} data:; style-src {{cspSource}}; script-src 'nonce-{{nonce}}';"
+    />
+    <title>Break</title>
+    <link rel="stylesheet" href="{{styleUri}}" />
+  </head>
+  <body>
+    <main id="break" data-ends-at="{{endsAt}}">
+      <img src="{{imageUri}}" alt="Mimir" width="160" height="160" />
+      <h1>Step away from the realm, brother.</h1>
+      <div id="break-countdown" aria-live="off">0:00</div>
+      <p>
+        Your files are read-only until the break ends. Stretch, look out a
+        window, drink some water. The code will still be here.
+      </p>
+      <button id="end-break" class="button" type="button">End break early</button>
+    </main>
+    <script nonce="{{nonce}}" src="{{scriptUri}}"></script>
+  </body>
+</html>

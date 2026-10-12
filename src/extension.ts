@@ -2,16 +2,11 @@ import * as vscode from "vscode";
 import { MimirViewProvider } from "./mimirView";
 import { WellbeingTracker } from "./wellbeingTracker";
 import { ErrorWatcher } from "./errorWatcher";
-
-const lines = [
-  "Head's up, brother.",
-  "That bracket is lying to you.",
-  "I have seen worse realms than this file.",
-  "Save your work. Even gods forget.",
-];
+import { BreakMode } from "./breakMode";
+import { pick } from "./lines";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const mimir = new MimirViewProvider(context.extensionUri, lines);
+  const mimir = new MimirViewProvider(context.extensionUri);
 
   context.subscriptions.push(
     // View
@@ -19,19 +14,23 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   const wellbeing = new WellbeingTracker(context, mimir);
   const errors = new ErrorWatcher(mimir);
+  const breakMode = new BreakMode(context, mimir, wellbeing);
 
   context.subscriptions.push(
     wellbeing,
     errors,
+    breakMode,
 
     // Commands
     vscode.commands.registerCommand("mimir.summon", async () => {
       await vscode.commands.executeCommand("mimir.pet.focus");
-      mimir.say(mimir.randomIdleLine());
+      mimir.say(pick("idle"));
     }),
     vscode.commands.registerCommand("mimir.drinkWater", () => {
       wellbeing.drinkWater();
     }),
+    vscode.commands.registerCommand("mimir.takeBreak", () => breakMode.start()),
+    vscode.commands.registerCommand("mimir.endBreak", () => breakMode.end()),
 
     // Reactions
     vscode.workspace.onDidSaveTextDocument((document) => {
@@ -42,12 +41,14 @@ export function activate(context: vscode.ExtensionContext): void {
       if (errorsHandled || testHandled) {
         return;
       }
-      mimir.setMood("pleased", "Saved. Even gods forget, sometimes.");
+      mimir.setMood("pleased", pick("saved"));
     }),
 
     // Status bar
     createHorn(),
   );
+
+  void breakMode.resume();
 }
 
 export function deactivate(): void {}

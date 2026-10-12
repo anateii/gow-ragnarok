@@ -43,16 +43,17 @@ async function main() {
 		],
 	});
 	const webviewCtx = await esbuild.context({
-		entryPoints: [
-			'src/webview/main.ts'
-		],
+		entryPoints: {
+			webview: 'src/webview/main.ts',
+			break: 'src/webview/break.ts',
+		},
 		bundle: true,
 		format: 'iife',
 		minify: production,
 		sourcemap: !production,
 		sourcesContent: false,
 		platform: 'browser',
-		outfile: 'dist/webview.js',
+		outdir: 'dist',
 		logLevel: 'silent',
 		plugins: [
 			esbuildProblemMatcherPlugin,

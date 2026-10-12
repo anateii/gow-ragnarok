@@ -1,3 +1,5 @@
+import { formatCountdown } from "../countdown";
+
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
 type Mood = "idle" | "pleased" | "annoyed";
@@ -116,18 +118,16 @@ let waterReadyAt = 0;
 let waterTimer: ReturnType<typeof setInterval> | undefined;
 
 function renderWaterButton(): void {
-  const remaining = Math.ceil((waterReadyAt - Date.now()) / 1000);
-  if (remaining <= 0) {
+  const now = Date.now();
+  if (waterReadyAt <= now) {
     clearInterval(waterTimer);
     waterTimer = undefined;
     drinkButton.disabled = false;
     drinkButton.textContent = "💧 Drink water";
     return;
   }
-  const minutes = Math.floor(remaining / 60);
-  const seconds = String(remaining % 60).padStart(2, "0");
   drinkButton.disabled = true;
-  drinkButton.textContent = `💧 Drink again in ${minutes}:${seconds}`;
+  drinkButton.textContent = `💧 Drink again in ${formatCountdown(waterReadyAt, now)}`;
 }
 
 function setWaterReadyAt(time: number): void {
@@ -140,6 +140,10 @@ function setWaterReadyAt(time: number): void {
 
 drinkButton.addEventListener("click", () => {
   vscode.postMessage({ type: "drinkWater" });
+});
+
+document.getElementById("take-break")?.addEventListener("click", () => {
+  vscode.postMessage({ type: "takeBreak" });
 });
 
 vscode.postMessage({ type: "ready" });

@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { pick } from "./lines";
 
 type Mood = "idle" | "pleased" | "annoyed";
 
@@ -11,10 +12,7 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
   private pinned?: { mood: Mood; line: string };
   private waterReadyAt?: number;
 
-  constructor(
-    private readonly extensionUri: vscode.Uri,
-    private readonly idleLines: string[],
-  ) {}
+  constructor(private readonly extensionUri: vscode.Uri) {}
 
   resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.view = webviewView;
@@ -33,6 +31,10 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
         void vscode.commands.executeCommand("mimir.drinkWater");
         return;
       }
+      if (msg?.type === "takeBreak") {
+        void vscode.commands.executeCommand("mimir.takeBreak");
+        return;
+      }
       if (msg?.type !== "ready") {
         return;
       }
@@ -46,7 +48,7 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
       if (this.pinned) {
         this.pin(this.pinned.mood, this.pinned.line);
       } else {
-        this.say(this.pendingLine ?? this.randomIdleLine());
+        this.say(this.pendingLine ?? pick("idle"));
       }
       this.pendingLine = undefined;
     });
@@ -63,10 +65,6 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     this.view.webview.postMessage({ type: "say", line });
-  }
-
-  randomIdleLine(): string {
-    return this.idleLines[Math.floor(Math.random() * this.idleLines.length)];
   }
 
   setMood(mood: Mood, line: string): void {
@@ -136,7 +134,7 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
-function getNonce(): string {
+export function getNonce(): string {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   return Array.from(

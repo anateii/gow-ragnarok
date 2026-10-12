@@ -117,8 +117,14 @@ body {
   font: 11px/1.4 sans-serif;
 }
 
-#drink-water {
+#actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 10px;
+}
+
+.button {
   padding: 6px 12px;
   color: #d8e6f2;
   background: #1a2228;
@@ -128,20 +134,70 @@ body {
   cursor: pointer;
 }
 
-#drink-water:disabled {
+.button:disabled {
   color: #6f8599;
   border-color: #2a4150;
   cursor: default;
   font-variant-numeric: tabular-nums;
 }
 
-#drink-water:hover:not(:disabled) {
+.button:hover:not(:disabled) {
   background: #22313b;
 }
 
-#drink-water:focus-visible {
+.button:focus-visible {
   outline: 2px solid #d3bd89;
   outline-offset: 2px;
+}
+
+/* Break screen (opened full-screen in the editor area during a break) */
+#break {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 24px;
+  text-align: center;
+  color: #d8e6f2;
+  font-family: sans-serif;
+}
+
+#break img {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px #d3bd89);
+}
+
+#break h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+#break-countdown {
+  color: #d3bd89;
+  font-size: 72px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+#break p {
+  margin: 0;
+  max-width: 360px;
+  color: #9ab3cf;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#end-break {
+  margin-top: 16px;
+  color: #9ab3cf;
+  border-color: #2a4150;
 }
 
 #vitality {
