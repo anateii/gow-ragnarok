@@ -3,7 +3,8 @@ import { MimirViewProvider } from "./mimirView";
 import { BreakClock, WellbeingTracker } from "./wellbeingTracker";
 import { Fatigue, formatSince } from "./wellbeing";
 import { ErrorWatcher } from "./errorWatcher";
-import { BreakMode } from "./breakMode";import { pick } from "./lines";
+import { BreakMode } from "./breakMode";
+import { RealmWatcher } from "./realmWatcher";import { pick } from "./lines";
 
 export function activate(context: vscode.ExtensionContext): void {
   const mimir = new MimirViewProvider(context.extensionUri);
@@ -15,11 +16,13 @@ export function activate(context: vscode.ExtensionContext): void {
   const wellbeing = new WellbeingTracker(context, mimir);
   const errors = new ErrorWatcher(mimir);
   const breakMode = new BreakMode(context, mimir, wellbeing);
+  const realms = new RealmWatcher(mimir);
 
   context.subscriptions.push(
     wellbeing,
     errors,
     breakMode,
+    realms,
 
     // Commands
     vscode.commands.registerCommand("mimir.summon", async () => {
@@ -53,6 +56,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   void breakMode.resume();
+  void realms.start();
 }
 
 export function deactivate(): void {}

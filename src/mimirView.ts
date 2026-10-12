@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { pick } from "./lines";
+import { RealmId, RealmTile } from "./realms";
 
 type Mood = "idle" | "pleased" | "annoyed";
 
@@ -12,6 +13,10 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
   private pinned?: { mood: Mood; line: string };
   private waterReadyAt?: number;
   private dozeLine?: string;
+  private realms?: RealmTile[];
+  private readonly realmClickEmitter = new vscode.EventEmitter<RealmId>();
+  /** Fires when a Nine Realms tile is clicked in the panel. */
+  readonly onDidClickRealm = this.realmClickEmitter.event;
 
   constructor(private readonly extensionUri: vscode.Uri) {}
 
@@ -36,6 +41,10 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
         void vscode.commands.executeCommand("mimir.takeBreak");
         return;
       }
+      if (msg?.type === "realm" && typeof msg.id === "string") {
+        this.realmClickEmitter.fire(msg.id as RealmId);
+        return;
+      }
       if (msg?.type !== "ready") {
         return;
       }
@@ -48,6 +57,9 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
       }
       if (this.dozeLine !== undefined) {
         this.setDozing(this.dozeLine);
+      }
+      if (this.realms) {
+        this.setRealms(this.realms);
       }
       if (this.pinned) {
         this.pin(this.pinned.mood, this.pinned.line);
@@ -69,6 +81,13 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     this.view.webview.postMessage({ type: "say", line });
+  }
+
+  setRealms(tiles: RealmTile[]): void {
+    this.realms = tiles;
+    if (this.ready) {
+      this.view?.webview.postMessage({ type: "realms", tiles });
+    }
   }
 
   setMood(mood: Mood, line: string): void {

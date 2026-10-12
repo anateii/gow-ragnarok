@@ -14,6 +14,217 @@ body {
   padding: 12px;
 }
 
+/* The Nine Realms: project stats pinned to the top, three rows of three. */
+#realms {
+  position: relative; /* anchors the hover tooltip */
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #1f2a33;
+}
+
+#realms:not(:has(.realm)) {
+  display: none;
+}
+
+/* Hover tooltip under a realm tile, spanning the grid's width. */
+#realm-tip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 8px 10px;
+  color: #d8e6f2;
+  background: #1a2228;
+  border: 1px solid #d3bd89;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  font: 11px/1.45 sans-serif;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-3px);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  pointer-events: none;
+}
+
+#realm-tip.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Arrow pointing up at the hovered tile. */
+#realm-tip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: calc(var(--arrow-x, 50%) - 6px);
+  width: 10px;
+  height: 10px;
+  background: #1a2228;
+  border-top: 1px solid #d3bd89;
+  border-left: 1px solid #d3bd89;
+  transform: rotate(45deg);
+}
+
+.realm-tip-head {
+  margin-bottom: 3px;
+  color: #f2d98d;
+  font-weight: 600;
+}
+
+.realm-tip-rune {
+  text-shadow: 0 0 6px rgba(242, 217, 141, 0.8);
+}
+
+.realm-tip-rune-name {
+  color: #9ab3cf;
+  font-weight: 400;
+}
+
+.realm {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 4px;
+  color: #d8e6f2;
+  background: #141c22;
+  border: 1px solid #2a4150;
+  border-radius: 6px;
+  font-family: sans-serif;
+  cursor: pointer;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.2s ease;
+}
+
+.realm:hover {
+  background: #1a2228;
+  border-color: #3d92b4;
+}
+
+.realm:focus-visible {
+  outline: 2px solid #d3bd89;
+  outline-offset: 1px;
+}
+
+.realm > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The realm's rune, carved large and faint behind the tile's text. */
+.realm > .realm-rune {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: none;
+  overflow: visible;
+  color: #d3bd89;
+  font-size: 42px;
+  line-height: 1;
+  opacity: 0.12;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.realm:hover > .realm-rune {
+  opacity: 0.25;
+}
+
+.realm.tone-danger > .realm-rune {
+  color: #e07a5f;
+}
+
+.realm.tone-warn > .realm-rune {
+  color: #e3c35a;
+}
+
+.realm-name,
+.realm-value,
+.realm-detail {
+  position: relative; /* above the rune */
+}
+
+/* The rune next to the realm's name: gold, glowing and slowly shimmering. */
+.realm-name-rune {
+  display: inline-block;
+  margin-right: 3px;
+  color: #f2d98d;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-shadow:
+    0 0 3px #d3bd89,
+    0 0 7px rgba(211, 189, 137, 0.7);
+  animation: rune-shimmer 3s ease-in-out infinite;
+}
+
+.realm:hover .realm-name-rune {
+  color: #fff3c4;
+}
+
+@keyframes rune-shimmer {
+  0%,
+  100% {
+    text-shadow:
+      0 0 3px #d3bd89,
+      0 0 7px rgba(211, 189, 137, 0.6);
+  }
+  50% {
+    text-shadow:
+      0 0 4px #f2d98d,
+      0 0 12px rgba(242, 217, 141, 0.9);
+  }
+}
+
+.realm-name {
+  color: #d3bd89;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.realm-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.realm-detail {
+  color: #6f8599;
+  font-size: 10px;
+}
+
+.realm.tone-danger {
+  border-color: #b4573d;
+  box-shadow: 0 0 8px rgba(180, 87, 61, 0.35);
+}
+
+.realm.tone-danger .realm-value {
+  color: #e07a5f;
+}
+
+.realm.tone-warn {
+  border-color: #c9a227;
+  box-shadow: 0 0 8px rgba(201, 162, 39, 0.3);
+}
+
+.realm.tone-warn .realm-value {
+  color: #e3c35a;
+}
+
+.realm.tone-good .realm-value {
+  color: #8fc9a3;
+}
+
 /* Mimir and his thought bubble, centred in the free space */
 #scene {
   flex: 1 1 auto;
@@ -185,7 +396,8 @@ body {
     transition: none;
   }
 
-  #stage.dozing #face {
+  #stage.dozing #face,
+  .realm-name-rune {
     animation: none;
   }
 

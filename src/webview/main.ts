@@ -1,4 +1,5 @@
 import { formatCountdown } from "../countdown";
+import type { RealmTile } from "../realms";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
@@ -11,6 +12,7 @@ type Message =
   | { type: "unpin" }
   | { type: "waterReadyAt"; time: number }
   | { type: "doze"; line: string | null }
+  | { type: "realms"; tiles: RealmTile[] }
   | { type: "vitality"; value: number; stage: Stage };
 
 type Stage = "wilting" | "steady" | "thriving";
@@ -179,8 +181,13 @@ window.addEventListener("message", (event: MessageEvent<Message>) => {
       msg.type !== "unpin" &&
       msg.type !== "vitality" &&
       msg.type !== "waterReadyAt" &&
-      msg.type !== "doze")
+      msg.type !== "doze" &&
+      msg.type !== "realms")
   ) {
+    return;
+  }
+  if (msg.type === "realms") {
+    renderRealms(msg.tiles);
     return;
   }
   if (msg.type === "doze") {
@@ -249,6 +256,145 @@ drinkButton.addEventListener("click", () => {
 
 document.getElementById("take-break")?.addEventListener("click", () => {
   vscode.postMessage({ type: "takeBreak" });
+});
+
+const realmsEl = document.getElementById("realms") as HTMLElement;
+
+/** One tile's elements, created once and then updated in place. */
+interface TileElements {
+  button: HTMLButtonElement;
+  rune: HTMLSpanElement;
+  nameRune: HTMLSpanElement;
+  name: Text;
+  value: HTMLSpanElement;
+  detail: HTMLSpanElement;
+}
+
+const tileElements = new Map<string, TileElements>();
+let realmTiles: RealmTile[] = [];
+
+// textContent only throughout: project and file names come from the workspace.
+function span(className: string): HTMLSpanElement {
+  const el = document.createElement("span");
+  el.className = className;
+  return el;
+}
+
+function createTile(id: string): TileElements {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.id = id;
+  const els: TileElements = {
+    button,
+    rune: span("realm-rune"),
+    nameRune: span("realm-name-rune"),
+    name: document.createTextNode(""),
+    value: span("realm-value"),
+    detail: span("realm-detail"),
+  };
+  const name = span("realm-name");
+  name.append(els.nameRune, els.name);
+  button.append(els.rune, name, els.value, els.detail);
+  return els;
+}
+
+/**
+ * Updates tiles in place rather than rebuilding them, so hovering and focus
+ * survive the frequent updates (errors, git, file scans).
+ */
+function renderRealms(tiles: RealmTile[]): void {
+  realmTiles = tiles;
+  for (const tile of tiles) {
+    let els = tileElements.get(tile.id);
+    if (!els) {
+      els = createTile(tile.id);
+      tileElements.set(tile.id, els);
+      realmsEl.insertBefore(els.button, realmTip);
+    }
+    els.button.className = tile.tone ? `realm tone-${tile.tone}` : "realm";
+    els.button.setAttribute("aria-label", `${tile.name}: ${tile.value} ${tile.detail}. ${tile.tooltip}`);
+    els.rune.textContent = tile.rune;
+    els.nameRune.textContent = tile.rune;
+    els.name.textContent = tile.name;
+    els.value.textContent = tile.value;
+    els.detail.textContent = tile.detail;
+  }
+  if (tipFor) {
+    showTip(tipFor); // keep an open tooltip's text current
+  }
+}
+
+// Hover tooltip: the realm, its rune, and what the tile shows. Native `title`
+// tooltips are slow and unreliable inside webviews, so this is drawn here.
+const realmTip = document.createElement("div");
+realmTip.id = "realm-tip";
+realmTip.setAttribute("role", "tooltip");
+realmsEl.append(realmTip);
+let tipFor: string | undefined;
+let tipTimer: ReturnType<typeof setTimeout> | undefined;
+
+function showTip(id: string): void {
+  const tile = realmTiles.find((t) => t.id === id);
+  const button = tileElements.get(id)?.button;
+  if (!tile || !button) {
+    return;
+  }
+  tipFor = id;
+  const head = document.createElement("div");
+  head.className = "realm-tip-head";
+  const rune = span("realm-tip-rune");
+  rune.textContent = tile.rune;
+  const runeName = span("realm-tip-rune-name");
+  runeName.textContent = ` · ${tile.runeName}`;
+  head.append(rune, ` ${tile.name}`, runeName);
+  const body = document.createElement("div");
+  body.textContent = tile.tooltip;
+  realmTip.replaceChildren(head, body);
+  // Sit just below the tile, spanning the grid, with the arrow on the tile.
+  realmTip.style.top = `${button.offsetTop + button.offsetHeight + 8}px`;
+  realmTip.style.setProperty(
+    "--arrow-x",
+    `${button.offsetLeft + button.offsetWidth / 2}px`,
+  );
+  realmTip.classList.add("visible");
+}
+
+function hideTip(): void {
+  clearTimeout(tipTimer);
+  tipFor = undefined;
+  realmTip.classList.remove("visible");
+}
+
+function tileId(target: EventTarget | null): string | undefined {
+  return (target as HTMLElement | null)?.closest<HTMLElement>(".realm")?.dataset.id;
+}
+
+realmsEl.addEventListener("mouseover", (event) => {
+  const id = tileId(event.target);
+  clearTimeout(tipTimer);
+  if (!id) {
+    hideTip();
+  } else if (tipFor) {
+    showTip(id); // already open: follow the pointer straight away
+  } else {
+    tipTimer = setTimeout(() => showTip(id), 250);
+  }
+});
+realmsEl.addEventListener("mouseleave", hideTip);
+realmsEl.addEventListener("focusin", (event) => {
+  const id = tileId(event.target);
+  if (id) {
+    showTip(id);
+  }
+});
+realmsEl.addEventListener("focusout", hideTip);
+
+realmsEl.addEventListener("click", (event) => {
+  const id = tileId(event.target);
+  if (id) {
+    hideTip();
+    vscode.postMessage({ type: "realm", id });
+  }
 });
 
 vscode.postMessage({ type: "ready" });
