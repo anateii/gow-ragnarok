@@ -2,7 +2,7 @@
   "name": "gow-ragnarok",
   "displayName": "gow-ragnarok",
   "description": "Theme and virtual pet inspired by the game God of War - Ragnarok",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "engines": {
     "vscode": "^1.140.0"
   },
@@ -37,6 +37,10 @@
       {
         "command": "mimir.endBreak",
         "title": "Mimir: End break early"
+      },
+      {
+        "command": "mimir.remindBreak",
+        "title": "Mimir: Remind me to take a break"
       }
     ],
     "configuration": {

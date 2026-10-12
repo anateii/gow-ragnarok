@@ -61,7 +61,7 @@ export class BreakMode implements vscode.Disposable {
     }
     const minutes = vscode.workspace
       .getConfiguration("mimir")
-      .get("breakMinutes", 1);
+      .get("breakMinutes", 15);
     const files = vscode.workspace.getConfiguration("files");
     this.state = {
       endsAt: Date.now() + minutes * 60_000,

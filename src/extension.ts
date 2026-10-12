@@ -31,6 +31,9 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand("mimir.takeBreak", () => breakMode.start()),
     vscode.commands.registerCommand("mimir.endBreak", () => breakMode.end()),
+    vscode.commands.registerCommand("mimir.remindBreak", () => {
+      wellbeing.remindBreak();
+    }),
 
     // Reactions
     vscode.workspace.onDidSaveTextDocument((document) => {
@@ -45,7 +48,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
 
     // Status bar
-    createHorn(),
+    createHorn(wellbeing),
   );
 
   void breakMode.resume();
@@ -53,14 +56,29 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {}
 
-function createHorn(): vscode.StatusBarItem {
+/**
+ * The "Summon Mimir" status bar item. While a break reminder is unanswered it
+ * turns into a highlighted "Time for a break" that starts one when clicked.
+ */
+function createHorn(wellbeing: WellbeingTracker): vscode.Disposable {
   const horn = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
     100,
   );
-  horn.text = "⚡ Summon Mimir";
-  horn.tooltip = "Open the Mimir pet view";
-  horn.command = "mimir.summon";
+  const render = (breakDue: boolean) => {
+    horn.text = breakDue ? "☕ Time for a break" : "⚡ Summon Mimir";
+    horn.tooltip = breakDue
+      ? "Mimir thinks you need a break. Click to start one."
+      : "Open the Mimir pet view";
+    horn.command = breakDue ? "mimir.takeBreak" : "mimir.summon";
+    horn.backgroundColor = breakDue
+      ? new vscode.ThemeColor("statusBarItem.warningBackground")
+      : undefined;
+  };
+  render(false);
   horn.show();
-  return horn;
+  return vscode.Disposable.from(
+    horn,
+    wellbeing.onDidChangeBreakDue(render),
+  );
 }

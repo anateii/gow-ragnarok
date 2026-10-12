@@ -18,6 +18,10 @@ import { Situation, pick } from "./lines";
 const STATE_KEY = "mimir.wellbeing";
 const TICK_MS = 60_000;
 
+const SNOOZE_MS = 10 * 60_000;
+const TAKE_BREAK = "☕ Take a break";
+const SNOOZE = "Snooze 10 min";
+
 /** What Mimir says when each habit is rewarded. */
 const thanks: Record<Habit, Situation> = {
   break: "walkedAway",
@@ -31,6 +35,11 @@ export class WellbeingTracker implements vscode.Disposable {
   private blurredAt?: number;
   private onBreak = false;
   private lastNag: Partial<Record<Habit, number>> = {};
+  private breakSnoozedUntil = 0;
+  private breakDue = false;
+  private readonly breakDueEmitter = new vscode.EventEmitter<boolean>();
+  /** Fires true when a break reminder goes out, false once it's dealt with. */
+  readonly onDidChangeBreakDue = this.breakDueEmitter.event;
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
@@ -50,9 +59,13 @@ export class WellbeingTracker implements vscode.Disposable {
     const timer = setInterval(() => this.tick(), TICK_MS);
     this.disposables.push(
       { dispose: () => clearInterval(timer) },
+      this.breakDueEmitter,
       vscode.window.onDidChangeWindowState((e) => this.onFocus(e.focused)),
       vscode.tasks.onDidEndTaskProcess((e) => {
-        if (e.exitCode === 0 && e.execution.task.group === vscode.TaskGroup.Test) {
+        if (
+          e.exitCode === 0 &&
+          e.execution.task.group === vscode.TaskGroup.Test
+        ) {
           this.record("test", pick("testsPassed"));
         }
       }),
@@ -78,6 +91,16 @@ export class WellbeingTracker implements vscode.Disposable {
   setOnBreak(onBreak: boolean): void {
     this.onBreak = onBreak;
     this.blurredAt = undefined;
+    if (onBreak) {
+      this.setBreakDue(false);
+    }
+  }
+
+  /** Puts the break reminder off for a few minutes instead of the full interval. */
+  snoozeBreak(): void {
+    this.breakSnoozedUntil = Date.now() + SNOOZE_MS;
+    this.lastNag.break = undefined;
+    this.setBreakDue(false);
   }
 
   completeBreak(line: string): void {
@@ -121,6 +144,10 @@ export class WellbeingTracker implements vscode.Disposable {
     this.state = result.state;
     if (result.rewarded) {
       this.lastNag[habit] = undefined;
+      if (habit === "break") {
+        this.breakSnoozedUntil = 0;
+        this.setBreakDue(false);
+      }
       if (line !== null) {
         this.mimir.setMood("pleased", line);
       }
@@ -137,8 +164,11 @@ export class WellbeingTracker implements vscode.Disposable {
       return;
     }
     const config = vscode.workspace.getConfiguration("mimir");
-    if (this.shouldNag("break", now, config.get("breakReminderMinutes", 60))) {
-      this.mimir.setMood("annoyed", pick("breakReminder"));
+    if (
+      now >= this.breakSnoozedUntil &&
+      this.shouldNag("break", now, config.get("breakReminderMinutes", 60))
+    ) {
+      this.remindBreak();
     }
     if (this.shouldNag("water", now, config.get("waterReminderMinutes", 45))) {
       void vscode.window
@@ -149,6 +179,30 @@ export class WellbeingTracker implements vscode.Disposable {
           }
         });
     }
+  }
+
+  /** Shows the break reminder (toast, status bar, Mimir's line) right now. */
+  remindBreak(): void {
+    const line = pick("breakReminder");
+    this.mimir.setMood("annoyed", line);
+    this.setBreakDue(true);
+    void vscode.window
+      .showInformationMessage(`Mimir: ${line}`, TAKE_BREAK, SNOOZE)
+      .then((choice) => {
+        if (choice === TAKE_BREAK) {
+          void vscode.commands.executeCommand("mimir.takeBreak");
+        } else if (choice === SNOOZE) {
+          this.snoozeBreak();
+        }
+      });
+  }
+
+  private setBreakDue(due: boolean): void {
+    if (due === this.breakDue) {
+      return;
+    }
+    this.breakDue = due;
+    this.breakDueEmitter.fire(due);
   }
 
   private shouldNag(habit: Habit, now: number, minutes: number): boolean {

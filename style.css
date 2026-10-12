@@ -25,6 +25,7 @@ body {
 }
 
 #mimir {
+  position: relative;
   width: 96px;
   flex: 0 0 auto;
 }
@@ -34,6 +35,62 @@ body {
   width: 96px;
   height: 96px;
   object-fit: contain;
+}
+
+/* Mood changes: crossfade the faces, plus a small gesture per mood. */
+#face-next {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+#face-next:not([src]) {
+  visibility: hidden;
+}
+
+#face-next.visible {
+  opacity: 1;
+}
+
+#mimir.gesture-pleased {
+  animation: bob 0.6s ease-out;
+}
+
+#mimir.gesture-annoyed {
+  animation: shake 0.45s ease-in-out;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+  70% {
+    transform: translateY(1px) rotate(1deg);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px) rotate(-2deg);
+  }
+  40% {
+    transform: translateX(4px) rotate(2deg);
+  }
+  60% {
+    transform: translateX(-3px) rotate(-1deg);
+  }
+  80% {
+    transform: translateX(2px);
+  }
 }
 
 .wilting #mimir img {
@@ -84,6 +141,29 @@ body {
 
 #status:empty {
   visibility: hidden;
+}
+
+#status.pop {
+  animation: bubble-in 0.3s ease-out;
+}
+
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #face-next {
+    transition: none;
+  }
+
+  #mimir.gesture-pleased,
+  #mimir.gesture-annoyed,
+  #status.pop {
+    animation: none;
+  }
 }
 
 /* Vitality meter pinned to the bottom */

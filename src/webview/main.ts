@@ -14,7 +14,9 @@ type Message =
 
 type Stage = "wilting" | "steady" | "thriving";
 
+const mimirEl = document.getElementById("mimir") as HTMLDivElement;
 const face = document.getElementById("face") as HTMLImageElement;
+const faceNext = document.getElementById("face-next") as HTMLImageElement;
 const statusLine = document.getElementById("status") as HTMLDivElement;
 
 const faces: Record<Mood, string> = {
@@ -23,12 +25,63 @@ const faces: Record<Mood, string> = {
   annoyed: face.dataset.annoyed ?? face.src,
 };
 
-function show(line: string): void {
-  statusLine.textContent = line;
+// Keep in sync with the #face-next transition in style.css.
+const FADE_MS = 350;
+
+/** Restarts a CSS animation class, even if it's already applied. */
+function replay(el: HTMLElement, className: string): void {
+  el.classList.remove(className);
+  el.getBoundingClientRect(); // force a reflow so the animation starts over
+  el.classList.add(className);
 }
 
+function show(line: string): void {
+  if (statusLine.textContent === line) {
+    return;
+  }
+  statusLine.textContent = line;
+  replay(statusLine, "pop");
+}
+
+let currentMood: Mood = "idle";
+// Bumped on every change so a slow fade can't overwrite a newer mood.
+let faceChange = 0;
+
 function setFace(next: Mood): void {
-  face.src = faces[next] || faces.idle;
+  if (next === currentMood) {
+    return;
+  }
+  currentMood = next;
+  const change = ++faceChange;
+  const url = faces[next] || faces.idle;
+
+  mimirEl.classList.remove("gesture-pleased", "gesture-annoyed");
+  if (next !== "idle") {
+    replay(mimirEl, `gesture-${next}`);
+  }
+
+  // Crossfade: fade the new face in on top, then swap it underneath.
+  faceNext.src = url;
+  void faceNext
+    .decode()
+    .catch(() => undefined)
+    .then(() => {
+      if (change !== faceChange) {
+        return;
+      }
+      faceNext.classList.add("visible");
+      setTimeout(() => {
+        if (change !== faceChange) {
+          return;
+        }
+        face.src = url;
+        // Hide the overlay instantly; the face underneath now matches it.
+        faceNext.style.transition = "none";
+        faceNext.classList.remove("visible");
+        faceNext.getBoundingClientRect();
+        faceNext.style.transition = "";
+      }, FADE_MS);
+    });
 }
 
 function setVitality(value: number, stage: Stage): void {
