@@ -94,7 +94,7 @@ body {
 }
 
 .wilting #mimir img {
-  filter: grayscale(0.7) brightness(0.8);
+  filter: grayscale(0.35) brightness(0.9);
 }
 
 .thriving #mimir img {
@@ -154,9 +154,39 @@ body {
   }
 }
 
+/* Dozing: too long without a break. Dimmed, slowly breathing, sleepy bubble. */
+#stage.dozing #mimir img {
+  filter: grayscale(0.3) brightness(0.75);
+  transition: filter 1.5s ease;
+}
+
+#stage.dozing #face {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+#status.asleep {
+  color: #9ab3cf;
+  font-style: italic;
+  border-style: dashed;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(2px) scale(0.97);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #face-next {
     transition: none;
+  }
+
+  #stage.dozing #face {
+    animation: none;
   }
 
   #mimir.gesture-pleased,

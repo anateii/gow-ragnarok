@@ -11,6 +11,7 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
   private vitality?: { value: number; stage: string };
   private pinned?: { mood: Mood; line: string };
   private waterReadyAt?: number;
+  private dozeLine?: string;
 
   constructor(private readonly extensionUri: vscode.Uri) {}
 
@@ -45,6 +46,9 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
       if (this.waterReadyAt !== undefined) {
         this.setWaterReadyAt(this.waterReadyAt);
       }
+      if (this.dozeLine !== undefined) {
+        this.setDozing(this.dozeLine);
+      }
       if (this.pinned) {
         this.pin(this.pinned.mood, this.pinned.line);
       } else {
@@ -69,6 +73,17 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
 
   setMood(mood: Mood, line: string): void {
     this.view?.webview.postMessage({ type: "mood", mood, line });
+  }
+
+  /**
+   * Puts Mimir to sleep (dimmed, showing `line`) or wakes him with undefined.
+   * A pinned error still takes priority over the sleepy line.
+   */
+  setDozing(line: string | undefined): void {
+    this.dozeLine = line;
+    if (this.ready) {
+      this.view?.webview.postMessage({ type: "doze", line: line ?? null });
+    }
   }
 
   /** Epoch ms when the Drink water button becomes available again. */
@@ -116,6 +131,9 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
     const annoyedUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, "assets", "mimir-annoyed.png"),
     );
+    const sleepyUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, "assets", "mimir-sleepy.png"),
+    );
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, "style.css"),
     );
@@ -130,7 +148,8 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
       .replaceAll("{{styleUri}}", styleUri.toString())
       .replaceAll("{{scriptUri}}", scriptUri.toString())
       .replaceAll("{{pleasedUri}}", pleasedUri.toString())
-      .replaceAll("{{annoyedUri}}", annoyedUri.toString());
+      .replaceAll("{{annoyedUri}}", annoyedUri.toString())
+      .replaceAll("{{sleepyUri}}", sleepyUri.toString());
   }
 }
 

@@ -1,12 +1,15 @@
 import * as vscode from "vscode";
 import { MimirViewProvider } from "./mimirView";
 import {
+  Fatigue,
   Habit,
   MIN_BREAK_MS,
   Stage,
   WellbeingState,
   cooldownEndsAt,
   decay,
+  fatigueOf,
+  msSinceBreak,
   initialState,
   isReminderDue,
   isTestFile,
@@ -21,6 +24,12 @@ const TICK_MS = 60_000;
 const SNOOZE_MS = 10 * 60_000;
 const TAKE_BREAK = "☕ Take a break";
 const SNOOZE = "Snooze 10 min";
+
+export interface BreakClock {
+  sinceBreak: number;
+  fatigue: Fatigue;
+  onBreak: boolean;
+}
 
 /** What Mimir says when each habit is rewarded. */
 const thanks: Record<Habit, Situation> = {
@@ -40,6 +49,10 @@ export class WellbeingTracker implements vscode.Disposable {
   private readonly breakDueEmitter = new vscode.EventEmitter<boolean>();
   /** Fires true when a break reminder goes out, false once it's dealt with. */
   readonly onDidChangeBreakDue = this.breakDueEmitter.event;
+  private dozing = false;
+  private readonly updateEmitter = new vscode.EventEmitter<BreakClock>();
+  /** Fires every minute and whenever vitality or break state changes. */
+  readonly onDidUpdate = this.updateEmitter.event;
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(
@@ -60,6 +73,7 @@ export class WellbeingTracker implements vscode.Disposable {
     this.disposables.push(
       { dispose: () => clearInterval(timer) },
       this.breakDueEmitter,
+      this.updateEmitter,
       vscode.window.onDidChangeWindowState((e) => this.onFocus(e.focused)),
       vscode.tasks.onDidEndTaskProcess((e) => {
         if (
@@ -94,6 +108,12 @@ export class WellbeingTracker implements vscode.Disposable {
     if (onBreak) {
       this.setBreakDue(false);
     }
+    this.publish();
+  }
+
+  get clock(): BreakClock {
+    const sinceBreak = msSinceBreak(this.state, Date.now());
+    return { sinceBreak, fatigue: fatigueOf(sinceBreak), onBreak: this.onBreak };
   }
 
   /** Puts the break reminder off for a few minutes instead of the full interval. */
@@ -227,5 +247,14 @@ export class WellbeingTracker implements vscode.Disposable {
       this.stage = next;
       this.mimir.say(pick(next));
     }
+
+    const clock = this.clock;
+    // Mimir nods off after too long without a break; only a break wakes him.
+    const dozing = clock.fatigue === "dozing" && !clock.onBreak;
+    if (dozing !== this.dozing) {
+      this.dozing = dozing;
+      this.mimir.setDozing(dozing ? pick("dozing") : undefined);
+    }
+    this.updateEmitter.fire(clock);
   }
 }

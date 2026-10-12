@@ -2,7 +2,7 @@
   "name": "gow-ragnarok",
   "displayName": "gow-ragnarok",
   "description": "Theme and virtual pet inspired by the game God of War - Ragnarok",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "engines": {
     "vscode": "^1.140.0"
   },

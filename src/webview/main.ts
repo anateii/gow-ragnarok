@@ -10,6 +10,7 @@ type Message =
   | { type: "pin"; mood: Mood; line: string }
   | { type: "unpin" }
   | { type: "waterReadyAt"; time: number }
+  | { type: "doze"; line: string | null }
   | { type: "vitality"; value: number; stage: Stage };
 
 type Stage = "wilting" | "steady" | "thriving";
@@ -19,11 +20,20 @@ const face = document.getElementById("face") as HTMLImageElement;
 const faceNext = document.getElementById("face-next") as HTMLImageElement;
 const statusLine = document.getElementById("status") as HTMLDivElement;
 
-const faces: Record<Mood, string> = {
+/** A face to show: one of the moods, or his sleepy resting face. */
+type Face = Mood | "sleepy";
+
+const faces: Record<Face, string> = {
   idle: face.dataset.idle ?? face.src,
   pleased: face.dataset.pleased ?? face.src,
   annoyed: face.dataset.annoyed ?? face.src,
+  sleepy: face.dataset.sleepy ?? face.src,
 };
+
+// At or below this vitality score (as displayed), Mimir rests with his
+// sleepy face instead of the idle one.
+const SLEEPY_AT_OR_BELOW = 30;
+let lowVitality = false;
 
 // Keep in sync with the #face-next transition in style.css.
 const FADE_MS = 350;
@@ -35,7 +45,8 @@ function replay(el: HTMLElement, className: string): void {
   el.classList.add(className);
 }
 
-function show(line: string): void {
+function show(line: string, asleep = false): void {
+  statusLine.classList.toggle("asleep", asleep);
   if (statusLine.textContent === line) {
     return;
   }
@@ -43,11 +54,11 @@ function show(line: string): void {
   replay(statusLine, "pop");
 }
 
-let currentMood: Mood = "idle";
+let currentMood: Face = "idle";
 // Bumped on every change so a slow fade can't overwrite a newer mood.
 let faceChange = 0;
 
-function setFace(next: Mood): void {
+function setFace(next: Face): void {
   if (next === currentMood) {
     return;
   }
@@ -56,7 +67,7 @@ function setFace(next: Mood): void {
   const url = faces[next] || faces.idle;
 
   mimirEl.classList.remove("gesture-pleased", "gesture-annoyed");
-  if (next !== "idle") {
+  if (next === "pleased" || next === "annoyed") {
     replay(mimirEl, `gesture-${next}`);
   }
 
@@ -99,30 +110,62 @@ function setVitality(value: number, stage: Stage): void {
   document
     .getElementById("vitality")
     ?.setAttribute("title", `Vitality ${Math.round(value)}/100 (${stage})`);
+
+  const low = Math.round(value) <= SLEEPY_AT_OR_BELOW;
+  if (low !== lowVitality) {
+    lowVitality = low;
+    // Only swap the resting face now; a brief reaction finishes first.
+    if (!pinned && revertTimer === undefined) {
+      setFace(restingFace());
+    }
+  }
+}
+
+/** His face when nothing else is going on. */
+function restingFace(): Face {
+  return dozeLine || lowVitality ? "sleepy" : "idle";
 }
 
 // A pinned mood and line (e.g. an unresolved error) stay on screen; other
-// messages show briefly and then give way to it again.
+// messages show briefly and then give way to it again. While Mimir is dozing,
+// his sleepy line is the fallback when nothing is pinned.
 let pinned: { mood: Mood; line: string } | undefined;
+let dozeLine: string | undefined;
 let revertTimer: ReturnType<typeof setTimeout> | undefined;
 
 function settle(): void {
+  revertTimer = undefined;
   if (pinned) {
     setFace(pinned.mood);
     show(pinned.line);
+  } else if (dozeLine) {
+    setFace("sleepy");
+    show(dozeLine, true);
   } else {
-    setFace("idle");
+    setFace(restingFace());
   }
 }
 
 function showBriefly(line: string, mood?: Mood): void {
   clearTimeout(revertTimer);
+  revertTimer = undefined;
   if (mood) {
     setFace(mood);
   }
   show(line);
-  if (pinned || (mood && mood !== "idle")) {
+  if (pinned || dozeLine || (mood && mood !== "idle")) {
     revertTimer = setTimeout(settle, 4000);
+  }
+}
+
+function setDozing(line: string | undefined): void {
+  dozeLine = line;
+  document.getElementById("stage")?.classList.toggle("dozing", !!line);
+  // Fall asleep now unless a brief message is still showing; it will settle
+  // into the sleepy line by itself. Waking up leaves the current line alone
+  // so the reward message that woke him stays visible.
+  if (line && revertTimer === undefined) {
+    settle();
   }
 }
 
@@ -135,8 +178,13 @@ window.addEventListener("message", (event: MessageEvent<Message>) => {
       msg.type !== "pin" &&
       msg.type !== "unpin" &&
       msg.type !== "vitality" &&
-      msg.type !== "waterReadyAt")
+      msg.type !== "waterReadyAt" &&
+      msg.type !== "doze")
   ) {
+    return;
+  }
+  if (msg.type === "doze") {
+    setDozing(msg.line ?? undefined);
     return;
   }
   if (msg.type === "waterReadyAt") {
@@ -155,6 +203,10 @@ window.addEventListener("message", (event: MessageEvent<Message>) => {
   }
   if (msg.type === "unpin") {
     pinned = undefined;
+    // Fall back to the sleepy line if he's dozing, unless a message is showing.
+    if (dozeLine && revertTimer === undefined) {
+      settle();
+    }
     return;
   }
   if (msg.type === "say") {

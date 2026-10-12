@@ -98,6 +98,9 @@ export const lines = {
     "Oh, for the love of— it's a break, Brother. Take it.",
   ],
 
+  /** Shown while he's dozed off from too long without a break. */
+  dozing: ["Zzz…", "Zzz… five more minutes, Brother… zzz…", "Zzz… olives… zzz…"],
+
   breakExpiredWhileAway: ["The break ended while you were away. Welcome back."],
 
   thriving: ["You're on fire, Kratos!", "I feel like a young god again!"],

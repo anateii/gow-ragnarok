@@ -3,9 +3,16 @@ import {
   COOLDOWNS,
   DECAY_PER_HOUR,
   GAINS,
+  DOZE_AFTER_MS,
+  DUE_AFTER_MS,
+  FAST_DRAIN_MULTIPLIER,
   MAX_VITALITY,
+  TIRED_AFTER_MS,
   cooldownEndsAt,
   decay,
+  fatigueOf,
+  formatSince,
+  msSinceBreak,
   initialState,
   isReminderDue,
   isTestFile,
@@ -25,6 +32,40 @@ suite("Wellbeing", () => {
       state.vitality - DECAY_PER_HOUR,
     );
     assert.strictEqual(decay(state, T0 + 100 * HOUR).vitality, 0);
+  });
+
+  test("drain doubles once you're tired", () => {
+    // Break at T0; update from 80 to 100 min: 10 min normal, 10 min doubled.
+    const state = {
+      ...initialState(T0),
+      vitality: 50,
+      lastUpdated: T0 + 80 * MINUTE,
+    };
+    const drained = 50 - decay(state, T0 + 100 * MINUTE).vitality;
+    const perMinute = DECAY_PER_HOUR / 60;
+    assert.ok(Math.abs(drained - perMinute * (10 + 10 * FAST_DRAIN_MULTIPLIER)) < 1e-9);
+  });
+
+  test("a break restores the normal drain rate", () => {
+    const tired = { ...initialState(T0), lastUpdated: T0 + 3 * HOUR };
+    const { state } = reward(tired, "break", T0 + 3 * HOUR);
+    const drained = state.vitality - decay(state, T0 + 4 * HOUR).vitality;
+    assert.ok(Math.abs(drained - DECAY_PER_HOUR) < 1e-9);
+  });
+
+  test("fatigue escalates with time since the last break", () => {
+    assert.strictEqual(fatigueOf(59 * MINUTE), "fresh");
+    assert.strictEqual(fatigueOf(DUE_AFTER_MS), "due");
+    assert.strictEqual(fatigueOf(TIRED_AFTER_MS), "tired");
+    assert.strictEqual(fatigueOf(DOZE_AFTER_MS), "dozing");
+    assert.strictEqual(msSinceBreak(initialState(T0), T0 + HOUR), HOUR);
+  });
+
+  test("formats time since the last break", () => {
+    assert.strictEqual(formatSince(0), "0m");
+    assert.strictEqual(formatSince(12 * MINUTE + 59_000), "12m");
+    assert.strictEqual(formatSince(HOUR + 5 * MINUTE), "1h05m");
+    assert.strictEqual(formatSince(2 * HOUR + 30 * MINUTE), "2h30m");
   });
 
   test("decay ignores clocks that go backwards", () => {

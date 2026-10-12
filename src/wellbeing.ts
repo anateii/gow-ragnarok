@@ -2,6 +2,7 @@
 
 export type Habit = "break" | "test" | "water";
 export type Stage = "wilting" | "steady" | "thriving";
+export type Fatigue = "fresh" | "due" | "tired" | "dozing";
 
 export interface WellbeingState {
   vitality: number;
@@ -15,6 +16,12 @@ const HOUR = 60 * MINUTE;
 export const MAX_VITALITY = 100;
 export const DECAY_PER_HOUR = 12;
 export const MIN_BREAK_MS = 5 * MINUTE;
+
+// Skipping breaks gets progressively more expensive.
+export const DUE_AFTER_MS = 60 * MINUTE;
+export const TIRED_AFTER_MS = 90 * MINUTE;
+export const DOZE_AFTER_MS = 120 * MINUTE;
+export const FAST_DRAIN_MULTIPLIER = 2;
 
 export const GAINS: Record<Habit, number> = {
   break: 20,
@@ -43,10 +50,57 @@ export function cooldownEndsAt(state: WellbeingState, habit: Habit): number {
   return state.lastHabit[habit] + COOLDOWNS[habit];
 }
 
+/**
+ * Drains vitality since the last update. Time spent more than
+ * TIRED_AFTER_MS past the last break drains FAST_DRAIN_MULTIPLIER times faster.
+ */
 export function decay(state: WellbeingState, now: number): WellbeingState {
-  const elapsed = Math.max(0, now - state.lastUpdated);
-  const vitality = clamp(state.vitality - (elapsed / HOUR) * DECAY_PER_HOUR);
-  return { ...state, vitality, lastUpdated: now };
+  const from = state.lastUpdated;
+  const to = Math.max(from, now);
+  const tiredAt = state.lastHabit.break + TIRED_AFTER_MS;
+  const normal = Math.max(0, Math.min(to, tiredAt) - from);
+  const fast = to - from - normal;
+  const drained =
+    ((normal + fast * FAST_DRAIN_MULTIPLIER) / HOUR) * DECAY_PER_HOUR;
+  return {
+    ...state,
+    vitality: clamp(state.vitality - drained),
+    lastUpdated: now,
+  };
+}
+
+export function msSinceBreak(state: WellbeingState, now: number): number {
+  return Math.max(0, now - state.lastHabit.break);
+}
+
+/**
+ * How worn out you are from skipping breaks:
+ * - fresh: under an hour
+ * - due: a break is due (status bar turns orange)
+ * - tired: vitality drains faster (red)
+ * - dozing: Mimir falls asleep until you take a break (red)
+ */
+export function fatigueOf(sinceBreak: number): Fatigue {
+  if (sinceBreak >= DOZE_AFTER_MS) {
+    return "dozing";
+  }
+  if (sinceBreak >= TIRED_AFTER_MS) {
+    return "tired";
+  }
+  if (sinceBreak >= DUE_AFTER_MS) {
+    return "due";
+  }
+  return "fresh";
+}
+
+/** "12m" under an hour, "1h05m" after. */
+export function formatSince(ms: number): string {
+  const totalMinutes = Math.floor(ms / MINUTE);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours === 0
+    ? `${minutes}m`
+    : `${hours}h${String(minutes).padStart(2, "0")}m`;
 }
 
 export function reward(
@@ -75,7 +129,8 @@ export function isReminderDue(
   intervalMinutes: number,
 ): boolean {
   return (
-    intervalMinutes > 0 && now - state.lastHabit[habit] >= intervalMinutes * MINUTE
+    intervalMinutes > 0 &&
+    now - state.lastHabit[habit] >= intervalMinutes * MINUTE
   );
 }
 

@@ -1,9 +1,9 @@
 import * as vscode from "vscode";
 import { MimirViewProvider } from "./mimirView";
-import { WellbeingTracker } from "./wellbeingTracker";
+import { BreakClock, WellbeingTracker } from "./wellbeingTracker";
+import { Fatigue, formatSince } from "./wellbeing";
 import { ErrorWatcher } from "./errorWatcher";
-import { BreakMode } from "./breakMode";
-import { pick } from "./lines";
+import { BreakMode } from "./breakMode";import { pick } from "./lines";
 
 export function activate(context: vscode.ExtensionContext): void {
   const mimir = new MimirViewProvider(context.extensionUri);
@@ -49,12 +49,52 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Status bar
     createHorn(wellbeing),
+    createBreakClock(wellbeing),
   );
 
   void breakMode.resume();
 }
 
 export function deactivate(): void {}
+
+const clockTooltips: Record<Fatigue, string> = {
+  fresh: "Time since your last break.",
+  due: "A break is due. Click to take one.",
+  tired: "Over 90 minutes without a break: vitality drains twice as fast. Click to take one.",
+  dozing: "Over 2 hours without a break: Mimir has dozed off. Click to take one.",
+};
+
+const clockColors: Record<Fatigue, string | undefined> = {
+  fresh: undefined,
+  due: "statusBarItem.warningBackground",
+  tired: "statusBarItem.errorBackground",
+  dozing: "statusBarItem.errorBackground",
+};
+
+/**
+ * "⏱ 1h12m" since your last break: orange once a break is due, red once
+ * skipping it starts to cost vitality. Hidden during a break.
+ */
+function createBreakClock(wellbeing: WellbeingTracker): vscode.Disposable {
+  const item = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    99,
+  );
+  item.command = "mimir.takeBreak";
+  const render = ({ sinceBreak, fatigue, onBreak }: BreakClock) => {
+    if (onBreak) {
+      item.hide();
+      return;
+    }
+    item.text = `⏱ ${formatSince(sinceBreak)}`;
+    item.tooltip = clockTooltips[fatigue];
+    const color = clockColors[fatigue];
+    item.backgroundColor = color ? new vscode.ThemeColor(color) : undefined;
+    item.show();
+  };
+  render(wellbeing.clock);
+  return vscode.Disposable.from(item, wellbeing.onDidUpdate(render));
+}
 
 /**
  * The "Summon Mimir" status bar item. While a break reminder is unanswered it
