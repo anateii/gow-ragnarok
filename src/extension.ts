@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { MimirViewProvider } from "./mimirView";
 import { WellbeingTracker } from "./wellbeingTracker";
+import { ErrorWatcher } from "./errorWatcher";
 
 const lines = [
   "Head's up, brother.",
@@ -11,25 +12,22 @@ const lines = [
 
 export function activate(context: vscode.ExtensionContext): void {
   const mimir = new MimirViewProvider(context.extensionUri, lines);
-  let errorCount = 0;
 
   context.subscriptions.push(
     // View
     vscode.window.registerWebviewViewProvider(MimirViewProvider.viewId, mimir),
   );
   const wellbeing = new WellbeingTracker(context, mimir);
+  const errors = new ErrorWatcher(mimir);
 
   context.subscriptions.push(
     wellbeing,
+    errors,
 
     // Commands
     vscode.commands.registerCommand("mimir.summon", async () => {
       await vscode.commands.executeCommand("mimir.pet.focus");
       mimir.say(mimir.randomIdleLine());
-    }),
-    vscode.commands.registerCommand("mimir.throwRune", async () => {
-      await vscode.commands.executeCommand("mimir.pet.focus");
-      mimir.throwRune();
     }),
     vscode.commands.registerCommand("mimir.drinkWater", () => {
       wellbeing.drinkWater();
@@ -37,17 +35,14 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Reactions
     vscode.workspace.onDidSaveTextDocument((document) => {
-      if (wellbeing.onSave(document)) {
+      // While an error is pinned, the error watcher has the final word on a
+      // save; still credit test files, just without a competing line.
+      const errorsHandled = errors.onSave(document);
+      const testHandled = wellbeing.onSave(document, errorsHandled);
+      if (errorsHandled || testHandled) {
         return;
       }
       mimir.setMood("pleased", "Saved. Even gods forget, sometimes.");
-    }),
-    vscode.languages.onDidChangeDiagnostics(() => {
-      const next = countErrors();
-      if (next > errorCount) {
-        mimir.setMood("annoyed", "That bracket is lying to you.");
-      }
-      errorCount = next;
     }),
 
     // Status bar
@@ -56,16 +51,6 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {}
-
-function countErrors(): number {
-  return vscode.languages.getDiagnostics().reduce((sum, [, list]) => {
-    return (
-      sum +
-      list.filter((item) => item.severity === vscode.DiagnosticSeverity.Error)
-        .length
-    );
-  }, 0);
-}
 
 function createHorn(): vscode.StatusBarItem {
   const horn = vscode.window.createStatusBarItem(

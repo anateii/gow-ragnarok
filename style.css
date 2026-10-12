@@ -14,22 +14,89 @@ body {
   padding: 12px;
 }
 
+/* Mimir and his thought bubble, centred in the free space */
+#scene {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
 #mimir {
   width: 96px;
   flex: 0 0 auto;
 }
 
 #mimir img {
+  display: block;
   width: 96px;
   height: 96px;
   object-fit: contain;
+}
+
+.wilting #mimir img {
+  filter: grayscale(0.7) brightness(0.8);
+}
+
+.thriving #mimir img {
+  filter: drop-shadow(0 0 8px #d3bd89);
+}
+
+/* Thought bubble: a rounded cloud with two shrinking puffs trailing down
+   to Mimir's head. */
+#status {
+  position: relative;
+  max-width: 220px;
+  margin: 0 0 36px;
+  color: #d8e6f2;
+  background: #1a2228;
+  border: 1px solid #3d92b4;
+  border-radius: 20px;
+  padding: 10px 14px;
+  font: 13px/1.4 sans-serif;
+  text-align: center;
+}
+
+#status::before,
+#status::after {
+  content: "";
+  position: absolute;
+  background: #1a2228;
+  border: 1px solid #3d92b4;
+  border-radius: 50%;
+}
+
+#status::before {
+  width: 12px;
+  height: 12px;
+  bottom: -18px;
+  left: calc(50% + 2px);
+}
+
+#status::after {
+  width: 7px;
+  height: 7px;
+  bottom: -30px;
+  left: calc(50% - 8px);
+}
+
+#status:empty {
+  visibility: hidden;
+}
+
+/* Vitality meter pinned to the bottom */
+#vitality-panel {
+  flex: 0 0 auto;
+  padding-top: 12px;
+  border-top: 1px solid #1f2a33;
 }
 
 #vitality-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 8px;
 }
 
 #vitality-rune {
@@ -46,13 +113,39 @@ body {
 
 #vitality-help {
   margin: 4px 0 0;
-  max-width: 240px;
   color: #6f8599;
   font: 11px/1.4 sans-serif;
 }
 
+#drink-water {
+  margin-top: 10px;
+  padding: 6px 12px;
+  color: #d8e6f2;
+  background: #1a2228;
+  border: 1px solid #3d92b4;
+  border-radius: 6px;
+  font: 12px sans-serif;
+  cursor: pointer;
+}
+
+#drink-water:disabled {
+  color: #6f8599;
+  border-color: #2a4150;
+  cursor: default;
+  font-variant-numeric: tabular-nums;
+}
+
+#drink-water:hover:not(:disabled) {
+  background: #22313b;
+}
+
+#drink-water:focus-visible {
+  outline: 2px solid #d3bd89;
+  outline-offset: 2px;
+}
+
 #vitality {
-  flex: 0 1 160px;
+  flex: 1 1 auto;
   height: 6px;
   background: #1a2228;
   border: 1px solid #3d92b4;
@@ -73,30 +166,4 @@ body {
 
 .thriving #vitality-fill {
   background: #d3bd89;
-}
-
-.wilting #mimir img {
-  filter: grayscale(0.7) brightness(0.8);
-}
-
-.thriving #mimir img {
-  filter: drop-shadow(0 0 8px #d3bd89);
-}
-
-#status {
-  margin-top: 8px;
-  color: #d8e6f2;
-  background: #1a2228;
-  border: 1px solid #3d92b4;
-  border-radius: 8px;
-  padding: 8px;
-  font: 13px sans-serif;
-}
-
-#rune {
-  position: absolute;
-  right: 24px;
-  bottom: 64px;
-  color: #d3bd89;
-  font-size: 28px;
 }

@@ -5,6 +5,7 @@ import {
   MIN_BREAK_MS,
   Stage,
   WellbeingState,
+  cooldownEndsAt,
   decay,
   initialState,
   isReminderDue,
@@ -61,17 +62,22 @@ export class WellbeingTracker implements vscode.Disposable {
     );
   }
 
-  /** Returns true if the save was a test file and Mimir reacted to it. */
-  onSave(document: vscode.TextDocument): boolean {
+  /**
+   * Returns true if the save was a test file and Mimir reacted to it. When
+   * `quiet`, the reward is still recorded but Mimir says nothing.
+   */
+  onSave(document: vscode.TextDocument, quiet = false): boolean {
     if (!isTestFile(document.uri.path)) {
       return false;
     }
-    this.record("test");
+    this.record("test", quiet ? null : thanks.test);
     return true;
   }
 
   drinkWater(): void {
-    this.record("water");
+    if (!this.record("water")) {
+      this.mimir.say("You just drank, brother. Give it a few minutes.");
+    }
   }
 
   dispose(): void {
@@ -90,14 +96,21 @@ export class WellbeingTracker implements vscode.Disposable {
     this.blurredAt = undefined;
   }
 
-  private record(habit: Habit, line = thanks[habit]): void {
+  /**
+   * Rewards a habit; `line` is what Mimir says, or null to stay quiet.
+   * Returns false if the habit was still on cooldown.
+   */
+  private record(habit: Habit, line: string | null = thanks[habit]): boolean {
     const result = reward(this.state, habit, Date.now());
     this.state = result.state;
     if (result.rewarded) {
       this.lastNag[habit] = undefined;
-      this.mimir.setMood("pleased", line);
+      if (line !== null) {
+        this.mimir.setMood("pleased", line);
+      }
     }
     this.publish();
+    return result.rewarded;
   }
 
   private tick(): void {
@@ -145,6 +158,7 @@ export class WellbeingTracker implements vscode.Disposable {
     void this.context.globalState.update(STATE_KEY, this.state);
     const next = stageOf(this.state.vitality);
     this.mimir.setVitality(this.state.vitality, next);
+    this.mimir.setWaterReadyAt(cooldownEndsAt(this.state, "water"));
     if (next !== this.stage) {
       this.stage = next;
       this.mimir.say(stageLines[next]);

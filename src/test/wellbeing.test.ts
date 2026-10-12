@@ -4,6 +4,7 @@ import {
   DECAY_PER_HOUR,
   GAINS,
   MAX_VITALITY,
+  cooldownEndsAt,
   decay,
   initialState,
   isReminderDue,
@@ -58,8 +59,19 @@ suite("Wellbeing", () => {
     assert.strictEqual(later.rewarded, true);
   });
 
-  test("reminders fall due after the interval and can be disabled", () => {
+  test("a fresh install can drink water straight away", () => {
     const state = initialState(T0);
+    assert.ok(cooldownEndsAt(state, "water") <= T0);
+    assert.strictEqual(reward(state, "water", T0).rewarded, true);
+  });
+
+  test("cooldown ends a fixed time after the habit", () => {
+    const { state } = reward(initialState(T0), "water", T0 + HOUR);
+    assert.strictEqual(cooldownEndsAt(state, "water"), T0 + HOUR + COOLDOWNS.water);
+  });
+
+  test("reminders fall due after the interval and can be disabled", () => {
+    const { state } = reward(initialState(T0), "water", T0);
     assert.strictEqual(isReminderDue(state, "water", T0 + 44 * MINUTE, 45), false);
     assert.strictEqual(isReminderDue(state, "water", T0 + 45 * MINUTE, 45), true);
     assert.strictEqual(isReminderDue(state, "water", T0 + 10 * HOUR, 0), false);

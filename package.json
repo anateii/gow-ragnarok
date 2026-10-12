@@ -2,7 +2,7 @@
   "name": "gow-ragnarok",
   "displayName": "gow-ragnarok",
   "description": "Theme and virtual pet inspired by the game God of War - Ragnarok",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.140.0"
   },
@@ -23,10 +23,6 @@
       {
         "command": "mimir.summon",
         "title": "Mimir: Summon"
-      },
-      {
-        "command": "mimir.throwRune",
-        "title": "Mimir: Throw a rune"
       },
       {
         "command": "mimir.drinkWater",

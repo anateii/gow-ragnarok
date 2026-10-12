@@ -5,7 +5,9 @@ type Mood = "idle" | "pleased" | "annoyed";
 type Message =
   | { type: "say"; line: string }
   | { type: "mood"; mood: Mood; line: string }
-  | { type: "rune" }
+  | { type: "pin"; mood: Mood; line: string }
+  | { type: "unpin" }
+  | { type: "waterReadyAt"; time: number }
   | { type: "vitality"; value: number; stage: Stage };
 
 type Stage = "wilting" | "steady" | "thriving";
@@ -44,18 +46,29 @@ function setVitality(value: number, stage: Stage): void {
     ?.setAttribute("title", `Vitality ${Math.round(value)}/100 (${stage})`);
 }
 
-function dropRune(): void {
-  document.getElementById("rune")?.remove();
-  const rune = document.createElement("div");
-  rune.id = "rune";
-  rune.textContent = "ᚱ";
-  document.getElementById("stage")?.appendChild(rune);
-  setFace("pleased");
-  show("A rune. Catch it, brother.");
-  setTimeout(() => {
-    rune.remove();
+// A pinned mood and line (e.g. an unresolved error) stay on screen; other
+// messages show briefly and then give way to it again.
+let pinned: { mood: Mood; line: string } | undefined;
+let revertTimer: ReturnType<typeof setTimeout> | undefined;
+
+function settle(): void {
+  if (pinned) {
+    setFace(pinned.mood);
+    show(pinned.line);
+  } else {
     setFace("idle");
-  }, 4000);
+  }
+}
+
+function showBriefly(line: string, mood?: Mood): void {
+  clearTimeout(revertTimer);
+  if (mood) {
+    setFace(mood);
+  }
+  show(line);
+  if (pinned || (mood && mood !== "idle")) {
+    revertTimer = setTimeout(settle, 4000);
+  }
 }
 
 window.addEventListener("message", (event: MessageEvent<Message>) => {
@@ -64,28 +77,69 @@ window.addEventListener("message", (event: MessageEvent<Message>) => {
     !msg ||
     (msg.type !== "say" &&
       msg.type !== "mood" &&
-      msg.type !== "rune" &&
-      msg.type !== "vitality")
+      msg.type !== "pin" &&
+      msg.type !== "unpin" &&
+      msg.type !== "vitality" &&
+      msg.type !== "waterReadyAt")
   ) {
+    return;
+  }
+  if (msg.type === "waterReadyAt") {
+    setWaterReadyAt(msg.time);
     return;
   }
   if (msg.type === "vitality") {
     setVitality(msg.value, msg.stage);
     return;
   }
-  if (msg.type === "rune") {
-    dropRune();
+  if (msg.type === "pin") {
+    clearTimeout(revertTimer);
+    pinned = { mood: msg.mood, line: msg.line };
+    settle();
+    return;
+  }
+  if (msg.type === "unpin") {
+    pinned = undefined;
     return;
   }
   if (msg.type === "say") {
-    show(msg.line);
+    showBriefly(msg.line);
     return;
   }
-  setFace(msg.mood);
-  show(msg.line);
-  if (msg.mood !== "idle") {
-    setTimeout(() => setFace("idle"), 4000);
-  }
+  showBriefly(msg.line, msg.mood);
 });
 
-acquireVsCodeApi().postMessage({ type: "ready" });
+const vscode = acquireVsCodeApi();
+
+const drinkButton = document.getElementById("drink-water") as HTMLButtonElement;
+let waterReadyAt = 0;
+let waterTimer: ReturnType<typeof setInterval> | undefined;
+
+function renderWaterButton(): void {
+  const remaining = Math.ceil((waterReadyAt - Date.now()) / 1000);
+  if (remaining <= 0) {
+    clearInterval(waterTimer);
+    waterTimer = undefined;
+    drinkButton.disabled = false;
+    drinkButton.textContent = "💧 Drink water";
+    return;
+  }
+  const minutes = Math.floor(remaining / 60);
+  const seconds = String(remaining % 60).padStart(2, "0");
+  drinkButton.disabled = true;
+  drinkButton.textContent = `💧 Drink again in ${minutes}:${seconds}`;
+}
+
+function setWaterReadyAt(time: number): void {
+  waterReadyAt = time;
+  renderWaterButton();
+  if (waterTimer === undefined && time > Date.now()) {
+    waterTimer = setInterval(renderWaterButton, 1000);
+  }
+}
+
+drinkButton.addEventListener("click", () => {
+  vscode.postMessage({ type: "drinkWater" });
+});
+
+vscode.postMessage({ type: "ready" });

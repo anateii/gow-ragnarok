@@ -1,11 +1,15 @@
 import * as vscode from "vscode";
 
+type Mood = "idle" | "pleased" | "annoyed";
+
 export class MimirViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = "mimir.pet";
   private view?: vscode.WebviewView;
   private ready = false;
   private pendingLine?: string;
   private vitality?: { value: number; stage: string };
+  private pinned?: { mood: Mood; line: string };
+  private waterReadyAt?: number;
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -25,6 +29,10 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
     // The webview reloads its script whenever it is shown again, so wait for
     // its "ready" before posting anything; earlier messages would be dropped.
     webviewView.webview.onDidReceiveMessage((msg) => {
+      if (msg?.type === "drinkWater") {
+        void vscode.commands.executeCommand("mimir.drinkWater");
+        return;
+      }
       if (msg?.type !== "ready") {
         return;
       }
@@ -32,7 +40,14 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
       if (this.vitality) {
         this.setVitality(this.vitality.value, this.vitality.stage);
       }
-      this.say(this.pendingLine ?? this.randomIdleLine());
+      if (this.waterReadyAt !== undefined) {
+        this.setWaterReadyAt(this.waterReadyAt);
+      }
+      if (this.pinned) {
+        this.pin(this.pinned.mood, this.pinned.line);
+      } else {
+        this.say(this.pendingLine ?? this.randomIdleLine());
+      }
       this.pendingLine = undefined;
     });
     webviewView.onDidDispose(() => {
@@ -54,8 +69,34 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
     return this.idleLines[Math.floor(Math.random() * this.idleLines.length)];
   }
 
-  setMood(mood: "idle" | "pleased" | "annoyed", line: string): void {
+  setMood(mood: Mood, line: string): void {
     this.view?.webview.postMessage({ type: "mood", mood, line });
+  }
+
+  /** Epoch ms when the Drink water button becomes available again. */
+  setWaterReadyAt(time: number): void {
+    this.waterReadyAt = time;
+    if (this.ready) {
+      this.view?.webview.postMessage({ type: "waterReadyAt", time });
+    }
+  }
+
+  /** Keeps a mood and line on screen until unpin(), surviving view reloads. */
+  pin(mood: Mood, line: string): void {
+    this.pinned = { mood, line };
+    if (this.ready) {
+      this.view?.webview.postMessage({ type: "pin", mood, line });
+    }
+  }
+
+  unpin(): void {
+    if (!this.pinned) {
+      return;
+    }
+    this.pinned = undefined;
+    if (this.ready) {
+      this.view?.webview.postMessage({ type: "unpin" });
+    }
   }
 
   setVitality(value: number, stage: string): void {
@@ -63,10 +104,6 @@ export class MimirViewProvider implements vscode.WebviewViewProvider {
     if (this.ready) {
       this.view?.webview.postMessage({ type: "vitality", value, stage });
     }
-  }
-
-  throwRune(): void {
-    this.view?.webview.postMessage({ type: "rune" });
   }
 
   private async render(webview: vscode.Webview): Promise<void> {

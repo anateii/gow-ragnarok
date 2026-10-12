@@ -33,8 +33,14 @@ export function initialState(now: number): WellbeingState {
   return {
     vitality: 50,
     lastUpdated: now,
-    lastHabit: { break: now, test: 0, water: now },
+    // Water is backdated by its cooldown so you can drink straight away.
+    lastHabit: { break: now, test: 0, water: now - COOLDOWNS.water },
   };
+}
+
+/** When the habit can next be rewarded (in the past if it already can). */
+export function cooldownEndsAt(state: WellbeingState, habit: Habit): number {
+  return state.lastHabit[habit] + COOLDOWNS[habit];
 }
 
 export function decay(state: WellbeingState, now: number): WellbeingState {
