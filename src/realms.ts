@@ -13,8 +13,11 @@ export type RealmId =
   | "jotunheim";
 
 export interface ProjectStats {
-  /** From package.json, or the folder name when there is none. */
-  project?: { name: string; version?: string };
+  /**
+   * The open project: `name` is what VS Code calls it (folder or workspace
+   * name); `packageName` and `version` come from package.json, if any.
+   */
+  project?: { name: string; packageName?: string; version?: string };
   /** Undefined when the folder isn't a git repository. */
   git?: { branch?: string; ahead: number; behind: number; changes: number };
   errors: number;
@@ -79,7 +82,7 @@ export function buildTiles(stats: ProjectStats): RealmTile[] {
       name: "Midgard",
       value: project?.name ?? NONE,
       detail: project?.version ? `v${project.version}` : "no version",
-      tooltip: "Midgard, home of humans: your project. Click to open package.json.",
+      tooltip: midgardTooltip(project),
     },
     {
       id: "asgard",
@@ -147,6 +150,14 @@ export function buildTiles(stats: ProjectStats): RealmTile[] {
     const { rune, name, meaning } = REALM_RUNES[tile.id];
     return { ...tile, rune, runeName: `${name} (${meaning})` };
   });
+}
+
+function midgardTooltip(project: ProjectStats["project"]): string {
+  const pkg =
+    project?.packageName && project.packageName !== project.name
+      ? ` (package: ${project.packageName})`
+      : "";
+  return `Midgard, home of humans: the project you have open${pkg}. Click to open package.json.`;
 }
 
 function vanaheimDetail(git: ProjectStats["git"]): string {

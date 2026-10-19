@@ -157,10 +157,13 @@ export class RealmWatcher implements vscode.Disposable {
 
   private async readPackage(): Promise<void> {
     const root = this.root;
+    // What VS Code calls the open project: the folder's name, or the
+    // .code-workspace file's name for a multi-root workspace.
+    const name = vscode.workspace.name ?? root?.name;
     this.packageUri = undefined;
-    this.stats.project = root ? { name: root.name } : undefined;
+    this.stats.project = name ? { name } : undefined;
     this.stats.dependencies = undefined;
-    if (root) {
+    if (root && name) {
       const uri = vscode.Uri.joinPath(root.uri, "package.json");
       try {
         const pkg = JSON.parse(
@@ -168,7 +171,8 @@ export class RealmWatcher implements vscode.Disposable {
         );
         this.packageUri = uri;
         this.stats.project = {
-          name: typeof pkg.name === "string" ? pkg.name : root.name,
+          name,
+          packageName: typeof pkg.name === "string" ? pkg.name : undefined,
           version: typeof pkg.version === "string" ? pkg.version : undefined,
         };
         this.stats.dependencies =

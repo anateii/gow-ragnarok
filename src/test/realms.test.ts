@@ -91,6 +91,18 @@ suite("Realms", () => {
     assert.strictEqual(tile(empty, "svartalfheim").detail, "no package.json");
   });
 
+  test("Midgard shows the open project, with the package name in the tooltip", () => {
+    const stats = {
+      ...empty,
+      project: { name: "claude-code", packageName: "@codecrafters/claude-code" },
+    };
+    assert.strictEqual(tile(stats, "midgard").value, "claude-code");
+    assert.ok(tile(stats, "midgard").tooltip.includes("package: @codecrafters/claude-code"));
+
+    const same = { ...empty, project: { name: "gow-ragnarok", packageName: "gow-ragnarok" } };
+    assert.ok(!tile(same, "midgard").tooltip.includes("package:"));
+  });
+
   test("counts TODO and FIXME as whole words", () => {
     assert.strictEqual(countTodos("// TODO: a\n// FIXME b\n// TODOS and FIXMEs"), 2);
   });
