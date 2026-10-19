@@ -116,7 +116,7 @@ Mimir's view shows nine tiles. Each realm stands for one part of your project, m
 
 ## Requirements
 
-VS Code 1.140.0 or newer.
+VS Code 1.80.0 or newer.
 
 ## Development
 
