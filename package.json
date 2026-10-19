@@ -3,10 +3,10 @@
   "displayName": "God of War Ragnarok Theme",
   "publisher": "anateii",
   "description": "Theme, icon pack and Mimir virtual pet inspired by the game God of War - Ragnarok",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "icon": "assets/mimir-logo.png",
   "engines": {
-    "vscode": "^1.140.0"
+    "vscode": "^1.80.0"
   },
   "repository": {
     "type": "git",
