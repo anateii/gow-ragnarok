@@ -2,7 +2,7 @@
   "name": "gow-ragnarok",
   "displayName": "gow-ragnarok",
   "description": "Theme and virtual pet inspired by the game God of War - Ragnarok",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "engines": {
     "vscode": "^1.140.0"
   },
@@ -19,6 +19,13 @@
         "label": "Ragnarok",
         "uiTheme": "vs-dark",
         "path": "./themes/ragnarok-color-theme.json"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "ragnarok-icons",
+        "label": "Ragnarok Icons",
+        "path": "./themes/ragnarok-icon-theme.json"
       }
     ],
     "commands": [

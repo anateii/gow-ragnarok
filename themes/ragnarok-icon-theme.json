@@ -1,0 +1,136 @@
+{
+  "iconDefinitions": {
+    "file": { "iconPath": "../icons/file.svg" },
+    "folder": { "iconPath": "../icons/folder.svg" },
+    "folder-open": { "iconPath": "../icons/folder-open.svg" },
+    "typescript": { "iconPath": "../icons/typescript.svg" },
+    "javascript": { "iconPath": "../icons/javascript.svg" },
+    "react": { "iconPath": "../icons/react.svg" },
+    "angular": { "iconPath": "../icons/angular.svg" },
+    "python": { "iconPath": "../icons/python.svg" },
+    "markdown": { "iconPath": "../icons/markdown.svg" },
+    "html": { "iconPath": "../icons/html.svg" },
+    "css": { "iconPath": "../icons/css.svg" },
+    "json": { "iconPath": "../icons/json.svg" },
+    "yml": { "iconPath": "../icons/yml.svg" },
+    "ruby": { "iconPath": "../icons/ruby.svg" },
+    "image": { "iconPath": "../icons/image.svg" },
+    "git": { "iconPath": "../icons/git.svg" },
+    "key": { "iconPath": "../icons/key.svg" },
+    "lock": { "iconPath": "../icons/lock.svg" },
+    "docker": { "iconPath": "../icons/docker.svg" }
+  },
+
+  "file": "file",
+  "folder": "folder",
+  "folderExpanded": "folder-open",
+
+  "fileExtensions": {
+    "ts": "typescript",
+    "tsx": "react",
+    "mts": "typescript",
+    "cts": "typescript",
+
+    "js": "javascript",
+    "jsx": "react",
+    "mjs": "javascript",
+    "cjs": "javascript",
+
+    "component.ts": "angular",
+    "component.html": "angular",
+    "service.ts": "angular",
+    "module.ts": "angular",
+    "directive.ts": "angular",
+    "pipe.ts": "angular",
+    "guard.ts": "angular",
+    "interceptor.ts": "angular",
+    "resolver.ts": "angular",
+
+    "py": "python",
+    "pyi": "python",
+    "pyw": "python",
+    "ipynb": "python",
+
+    "md": "markdown",
+    "mdx": "markdown",
+    "markdown": "markdown",
+
+    "dockerfile": "docker",
+
+    "html": "html",
+    "css": "css",
+    "sass": "css",
+    "scss": "css",
+
+    "json": "json",
+    "jsonc": "json",
+
+    "yml": "yml",
+    "yaml": "yml",
+
+    "rb": "ruby",
+    "erb": "ruby",
+    "rake": "ruby",
+    "gemspec": "ruby",
+
+    "png": "image",
+    "jpg": "image",
+    "jpeg": "image",
+    "gif": "image",
+    "svg": "image",
+    "ico": "image",
+    "bmp": "image",
+    "tiff": "image",
+    "webp": "image",
+
+    "lock": "lock"
+  },
+
+  "fileNames": {
+    "package.json": "lock",
+    "package-lock.json": "lock",
+    "pnpm-lock.yaml": "lock",
+
+    ".gitignore": "git",
+    ".gitattributes": "git",
+    ".gitmodules": "git",
+    ".gitkeep": "git",
+    ".gitconfig": "git",
+
+    ".env": "key",
+    ".env.local": "key",
+    ".env.development": "key",
+    ".env.test": "key",
+    ".env.production": "key",
+    "credentials": "key",
+
+    "angular.json": "angular",
+
+    "Dockerfile": "docker",
+    ".dockerignore": "docker",
+    "docker-compose.yml": "docker",
+    "docker-compose.yaml": "docker",
+    "compose.yml": "docker",
+    "compose.yaml": "docker",
+
+    "requirements.txt": "python",
+    "pyproject.toml": "python",
+    "Pipfile": "python",
+    "setup.py": "python",
+
+    "Gemfile": "ruby",
+    "Rakefile": "ruby",
+
+    ".eslintrc": "json",
+    ".prettierrc": "json",
+    ".babelrc": "json",
+    ".eslintignore": "json",
+    ".prettierignore": "json",
+    ".editorconfig": "json"
+  },
+
+  "folderNames": {
+    "src": "folder",
+    "assets": "folder"
+  }
+}
